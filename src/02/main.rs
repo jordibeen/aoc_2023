@@ -13,9 +13,8 @@ fn pt1(input: &String) -> () {
     println!("Part 1 starting..");
     let start: Instant = Instant::now();
 
-    let mut sum = 0;
-    input.lines().for_each(|line: &str| {
-        let (game, cubes) = line.split_once(": ").unwrap();
+    let sum: i32 = input.lines().into_iter().fold(0, |acc, line| {
+        let (game, cubes): (&str, &str) = line.split_once(": ").unwrap();
 
         let game_id: i32 = Regex::new(r"Game (?P<id>\d+)")
             .unwrap()
@@ -47,7 +46,9 @@ fn pt1(input: &String) -> () {
             && greens.iter().max().unwrap() <= &13
             && blues.iter().max().unwrap() <= &14
         {
-            sum += game_id;
+            acc + game_id
+        } else {
+            acc
         }
     });
 
@@ -55,31 +56,29 @@ fn pt1(input: &String) -> () {
 }
 
 fn pt2(input: &String) -> () {
-    println!("Part 2 starting..");
     let start: Instant = Instant::now();
+    println!("Part 2 starting..");
 
-    let mut sum = 0;
-    input.lines().for_each(|line: &str| {
-        let (_, cubes) = line.split_once(": ").unwrap();
-
+    let sum: i32 = input.lines().into_iter().fold(0, |acc, line| {
         let reds: Vec<i32> = Regex::new(r"(?<red>\d+) red")
             .unwrap()
-            .find_iter(cubes)
+            .find_iter(line)
             .filter_map(|c| c.as_str().replace(" red", "").parse::<i32>().ok())
             .collect();
         let greens: Vec<i32> = Regex::new(r"(?<green>\d+) green")
             .unwrap()
-            .find_iter(cubes)
+            .find_iter(line)
             .filter_map(|c| c.as_str().replace(" green", "").parse::<i32>().ok())
             .collect();
         let blues: Vec<i32> = Regex::new(r"(?<blue>\d+) blue")
             .unwrap()
-            .find_iter(cubes)
+            .find_iter(line)
             .filter_map(|c| c.as_str().replace(" blue", "").parse::<i32>().ok())
             .collect();
 
-        sum +=
-            reds.iter().max().unwrap() * greens.iter().max().unwrap() * blues.iter().max().unwrap();
+        acc + reds.iter().max().unwrap()
+            * greens.iter().max().unwrap()
+            * blues.iter().max().unwrap()
     });
 
     println!("Part 2 finished in {:?}. Answer: {}", start.elapsed(), sum);
