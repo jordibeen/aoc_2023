@@ -5,21 +5,29 @@ use std::time::Instant;
 
 type Position = (i32, i32);
 type PartValue = usize;
+type Gears = HashMap<Position, HashSet<PartValue>>;
 
 fn main() {
     println!("--- Day 3: Gear Ratios ---");
     let input: String = fs::read_to_string("./src/03/input.txt").expect("File should exist");
     let start: Instant = Instant::now();
 
+    let gears = parse(&input);
+    println!("Part 1: {}", pt1(&gears));
+    println!("Part 2: {}", pt2(&gears));
+    println!("Execution time: {:.3?}", start.elapsed());
+}
+
+fn parse(input: &str) -> Gears {
+    let mut gears: Gears = HashMap::new();
     let mut part_numbers: Vec<(PartValue, Match)> = Vec::new();
-    let mut gears: HashMap<Position, HashSet<PartValue>> = HashMap::new();
 
     input.lines().enumerate().for_each(|(row_i, line)| {
         Regex::new(r"\d+")
             .unwrap()
             .captures_iter(line)
             .for_each(|cap| {
-                let part_number = cap.get(0).unwrap();
+                let part_number: Match = cap.get(0).unwrap();
                 part_numbers.push((row_i, part_number));
             });
 
@@ -27,7 +35,7 @@ fn main() {
             .unwrap()
             .find_iter(line)
             .for_each(|find| {
-                let gear_pos = (find.start() as i32, row_i as i32);
+                let gear_pos: Position = (find.start() as i32, row_i as i32);
                 gears.insert(gear_pos, HashSet::new());
             });
     });
@@ -55,22 +63,53 @@ fn main() {
         });
     });
 
-    let pt1 = gears.iter().fold(0, |acc, (_, part_values)| {
+    gears
+}
+
+fn pt1(gears: &Gears) -> usize {
+    let sum: usize = gears.iter().fold(0, |acc, (_, part_values)| {
         acc + part_values.iter().sum::<PartValue>()
     });
 
-    let pt2 = gears.iter().fold(0, |acc, (_, part_values)| {
+    sum
+}
+
+fn pt2(gears: &Gears) -> usize {
+    let sum = gears.iter().fold(0, |gear_ratios, (_, part_values)| {
         if part_values.len() > 1 {
-            let gear_value = part_values
-                .iter()
-                .fold(0, |acc, c| if acc == 0 { *c } else { acc * c });
-            acc + gear_value
+            let gear_value = part_values.iter().fold(0, |gear_ratios, part_value| {
+                if gear_ratios == 0 {
+                    *part_value
+                } else {
+                    gear_ratios * part_value
+                }
+            });
+            gear_ratios + gear_value
         } else {
-            acc
+            gear_ratios
         }
     });
 
-    println!("Part 1: {}", pt1);
-    println!("Part 2: {}", pt2);
-    println!("Ran for {:?}", start.elapsed());
+    sum
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pt1_test() {
+        let input = include_str!("./example.txt");
+        let gears = parse(&input);
+        let result = pt1(&gears);
+        assert_eq!(result, 4361);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example.txt");
+        let gears = parse(&input);
+        let result = pt2(&gears);
+        assert_eq!(result, 467835);
+    }
 }
