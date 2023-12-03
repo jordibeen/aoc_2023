@@ -39,8 +39,8 @@ fn parse(input: &str) -> Gears {
             });
     });
 
-    part_numbers.iter().for_each(|(row, m)| {
-        (m.start()..m.end()).for_each(|x| {
+    part_numbers.iter().for_each(|(row, part_number)| {
+        (part_number.start()..part_number.end()).for_each(|x| {
             let pos = (x as i32, *row as i32);
             vec![
                 (pos.0 - 1, pos.1),
@@ -55,7 +55,7 @@ fn parse(input: &str) -> Gears {
             .iter()
             .for_each(|pos| {
                 if let Some(gear) = gears.get_mut(pos) {
-                    let part_value = m.as_str().parse::<PartValue>().unwrap();
+                    let part_value = part_number.as_str().parse::<PartValue>().unwrap();
                     gear.insert(part_value);
                 }
             });
@@ -76,14 +76,14 @@ fn pt1(gears: &Gears) -> usize {
 fn pt2(gears: &Gears) -> usize {
     let sum = gears.iter().fold(0, |gear_ratios, (_, part_values)| {
         if part_values.len() > 1 {
-            let gear_value = part_values.iter().fold(0, |gear_ratios, part_value| {
-                if gear_ratios == 0 {
+            let gear_ratio = part_values.iter().fold(0, |acc, part_value| {
+                if acc == 0 {
                     *part_value
                 } else {
-                    gear_ratios * part_value
+                    acc * part_value
                 }
             });
-            gear_ratios + gear_value
+            gear_ratios + gear_ratio
         } else {
             gear_ratios
         }
