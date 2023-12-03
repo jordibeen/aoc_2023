@@ -3,8 +3,9 @@ use std::time::Instant;
 
 fn main() {
     println!("--- Day 1: Trebuchet?! ---");
-    let input: &str = include_str!("./input.txt");
     let start: Instant = Instant::now();
+
+    let input: &str = include_str!("./input.txt");
     println!("Part 1: {}", pt1(&input));
     println!("Part 2: {}", pt2(&input));
     println!("Execution time: {:.3?}", start.elapsed());

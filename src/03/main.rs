@@ -1,6 +1,5 @@
 use regex::{Match, Regex};
 use std::collections::{HashMap, HashSet};
-use std::fs;
 use std::time::Instant;
 
 type Position = (i32, i32);
@@ -9,9 +8,9 @@ type Gears = HashMap<Position, HashSet<PartValue>>;
 
 fn main() {
     println!("--- Day 3: Gear Ratios ---");
-    let input: String = fs::read_to_string("./src/03/input.txt").expect("File should exist");
     let start: Instant = Instant::now();
 
+    let input = include_str!("./input.txt");
     let gears = parse(&input);
     println!("Part 1: {}", pt1(&gears));
     println!("Part 2: {}", pt2(&gears));
