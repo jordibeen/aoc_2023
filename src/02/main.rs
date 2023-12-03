@@ -3,7 +3,7 @@ use std::fs;
 use std::time::Instant;
 
 fn main() {
-    println!("Day 02");
+    println!("--- Day 2: Cube Conundrum ---");
     let input: String = fs::read_to_string("./src/02/input.txt").expect("File should exist");
     pt1(&input);
     pt2(&input);
