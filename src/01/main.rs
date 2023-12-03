@@ -1,19 +1,17 @@
 use regex::Regex;
-use std::fs;
 use std::time::Instant;
 
 fn main() {
     println!("--- Day 1: Trebuchet?! ---");
-    let input: String = fs::read_to_string("./src/01/input.txt").expect("File should exist");
-    pt1(&input);
-    pt2(&input);
+    let input: &str = include_str!("./input.txt");
+    let start: Instant = Instant::now();
+    println!("Part 1: {}", pt1(&input));
+    println!("Part 2: {}", pt2(&input));
+    println!("Execution time: {:.3?}", start.elapsed());
 }
 
-fn pt1(input: &String) -> () {
-    println!("Part 1 starting..");
-    let start: Instant = Instant::now();
-
-    let sum = input.lines().into_iter().fold(0, |acc, line| {
+fn pt1(input: &str) -> i32 {
+    let sum: i32 = input.lines().into_iter().fold(0, |acc, line| {
         let digits: Vec<String> = Regex::new(r"\d")
             .unwrap()
             .find_iter(line)
@@ -25,16 +23,13 @@ fn pt1(input: &String) -> () {
             .unwrap()
     });
 
-    println!("Part 1 finished in {:?}. Answer: {}", start.elapsed(), sum);
+    sum
 }
 
-fn pt2(input: &String) -> () {
-    println!("Part 2 starting..");
-    let start = Instant::now();
-
-    let sum = input.lines().into_iter().fold(0, |acc, line| {
+fn pt2(input: &str) -> i32 {
+    let sum: i32 = input.lines().into_iter().fold(0, |acc, line| {
         let rev_line = line.chars().rev().collect::<String>();
-        let first = Regex::new(r"\d|one|two|three|four|five|six|seven|eight|nine")
+        let first: String = Regex::new(r"\d|one|two|three|four|five|six|seven|eight|nine")
             .unwrap()
             .find(line)
             .map(|x| match x.as_str() {
@@ -49,8 +44,9 @@ fn pt2(input: &String) -> () {
                 "nine" => "9",
                 _ => x.as_str(),
             })
-            .unwrap();
-        let last = Regex::new(r"\d|enin|thgie|neves|xis|evif|ruof|eerht|owt|eno")
+            .unwrap()
+            .to_owned();
+        let last: String = Regex::new(r"\d|enin|thgie|neves|xis|evif|ruof|eerht|owt|eno")
             .unwrap()
             .find(&rev_line)
             .map(|x| match x.as_str() {
@@ -65,9 +61,29 @@ fn pt2(input: &String) -> () {
                 "enin" => "9",
                 _ => x.as_str(),
             })
-            .unwrap();
-        acc + (first.to_owned() + last).parse::<i32>().unwrap()
+            .unwrap()
+            .to_owned();
+        acc + (first + &last).parse::<i32>().unwrap()
     });
 
-    println!("Part 2 finished in {:?}. Answer: {}", start.elapsed(), sum)
+    sum
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pt1_test() {
+        let input = include_str!("./example_pt1.txt");
+        let result = pt1(&input);
+        assert_eq!(result, 142);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example_pt2.txt");
+        let result = pt2(&input);
+        assert_eq!(result, 281);
+    }
 }
