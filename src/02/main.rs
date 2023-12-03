@@ -1,18 +1,16 @@
 use regex::Regex;
-use std::fs;
 use std::time::Instant;
 
 fn main() {
     println!("--- Day 2: Cube Conundrum ---");
-    let input: String = fs::read_to_string("./src/02/input.txt").expect("File should exist");
-    pt1(&input);
-    pt2(&input);
+    let input: &str = include_str!("./input.txt");
+    let start: Instant = Instant::now();
+    println!("Part 1: {}", pt1(&input));
+    println!("Part 2: {}", pt2(&input));
+    println!("Execution time: {:.3?}", start.elapsed());
 }
 
-fn pt1(input: &String) -> () {
-    println!("Part 1 starting..");
-    let start: Instant = Instant::now();
-
+fn pt1(input: &str) -> i32 {
     let sum: i32 = input.lines().into_iter().fold(0, |acc, line| {
         let (game, cubes): (&str, &str) = line.split_once(": ").unwrap();
 
@@ -52,13 +50,10 @@ fn pt1(input: &String) -> () {
         }
     });
 
-    println!("Part 1 finished in {:?}. Answer: {}", start.elapsed(), sum);
+    sum
 }
 
-fn pt2(input: &String) -> () {
-    let start: Instant = Instant::now();
-    println!("Part 2 starting..");
-
+fn pt2(input: &str) -> i32 {
     let sum: i32 = input.lines().into_iter().fold(0, |acc, line| {
         let reds: Vec<i32> = Regex::new(r"(?<red>\d+) red")
             .unwrap()
@@ -81,5 +76,24 @@ fn pt2(input: &String) -> () {
             * blues.iter().max().unwrap()
     });
 
-    println!("Part 2 finished in {:?}. Answer: {}", start.elapsed(), sum);
+    sum
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pt1_test() {
+        let input = include_str!("./example.txt");
+        let result = pt1(&input);
+        assert_eq!(result, 8);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example.txt");
+        let result = pt2(&input);
+        assert_eq!(result, 2286);
+    }
 }
