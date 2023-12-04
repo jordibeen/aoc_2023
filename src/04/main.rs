@@ -11,76 +11,75 @@ fn main() {
 }
 
 fn pt1(input: &str) -> usize {
-    let sum =
-        input.lines().fold(0, |acc, line| {
-            let (_, numbers) = line.split_once(": ").unwrap();
-            let (winning_numbers_s, my_numbers_s) = numbers.split_once(" | ").unwrap();
+    let total = input.lines().fold(0, |total, line| {
+        let (winning_numbers_str, my_numbers_str) =
+            line.split_once(": ").unwrap().1.split_once(" | ").unwrap();
 
-            let winning_numbers: HashSet<&str> = winning_numbers_s
-                .split(" ")
-                .filter(|x| !x.is_empty())
-                .collect();
-            let my_numbers: HashSet<&str> =
-                my_numbers_s.split(" ").filter(|x| !x.is_empty()).collect();
-
-            let score: usize = winning_numbers.intersection(&my_numbers).fold(0, |acc, _| {
-                if acc == 0 {
-                    1
-                } else {
-                    acc * 2
-                }
-            });
-
-            acc + score
-        });
-
-    sum
-}
-
-fn pt2(input: &str) -> usize {
-    let mut copies: HashMap<usize, usize> = HashMap::new();
-
-    input.lines().enumerate().for_each(|(line_i, line)| {
-        let card_number = line_i + 1;
-        let (_, numbers) = line.split_once(": ").unwrap();
-        let (winning_numbers_s, my_numbers_s) = numbers.split_once(" | ").unwrap();
-
-        let winning_numbers: HashSet<&str> = winning_numbers_s
+        let winning_numbers: HashSet<&str> = winning_numbers_str
             .split(" ")
             .filter(|x| !x.is_empty())
             .collect();
-        let my_numbers: HashSet<&str> = my_numbers_s.split(" ").filter(|x| !x.is_empty()).collect();
+        let my_numbers: HashSet<&str> = my_numbers_str
+            .split(" ")
+            .filter(|x| !x.is_empty())
+            .collect();
+
+        let points: usize = my_numbers
+            .intersection(&winning_numbers)
+            .fold(0, |points, _| if points == 0 { 1 } else { points * 2 });
+
+        total + points
+    });
+
+    total
+}
+
+fn pt2(input: &str) -> usize {
+    let mut card_counter: HashMap<usize, usize> = HashMap::new();
+
+    input.lines().enumerate().for_each(|(line_i, line)| {
+        let card_number = line_i + 1;
+        let (winning_numbers_str, my_numbers_str) =
+            line.split_once(": ").unwrap().1.split_once(" | ").unwrap();
+
+        let winning_numbers: HashSet<&str> = winning_numbers_str
+            .split(" ")
+            .filter(|x| !x.is_empty())
+            .collect();
+        let my_numbers: HashSet<&str> = my_numbers_str
+            .split(" ")
+            .filter(|x| !x.is_empty())
+            .collect();
 
         let mut multiplier = 1;
-        if let Some(c) = copies.get(&card_number) {
-            multiplier = multiplier + c;
+        if let Some(card_count) = card_counter.get(&card_number) {
+            multiplier = multiplier + card_count;
         }
+
         (0..multiplier).for_each(|_| {
-            winning_numbers
-                .intersection(&my_numbers)
+            my_numbers
+                .intersection(&winning_numbers)
                 .enumerate()
                 .for_each(|(i, _)| {
                     let next_card_number = card_number + (i + 1);
-                    if let Some(win) = copies.get_mut(&next_card_number) {
-                        *win += 1;
+                    if let Some(copies) = card_counter.get_mut(&next_card_number) {
+                        *copies += 1;
                     } else {
-                        copies.insert(next_card_number, 1);
+                        card_counter.insert(next_card_number, 1);
                     }
                 });
         });
 
-        if let Some(card_number) = copies.get_mut(&card_number) {
-            *card_number += 1;
+        if let Some(copies) = card_counter.get_mut(&card_number) {
+            *copies += 1;
         } else {
-            copies.insert(card_number, 1);
+            card_counter.insert(card_number, 1);
         };
     });
 
-    let sum = copies
-        .iter()
-        .fold(0, |acc, (_, copy_count)| acc + copy_count);
+    let total = card_counter.iter().fold(0, |acc, (_, copies)| acc + copies);
 
-    sum
+    total
 }
 
 #[cfg(test)]
