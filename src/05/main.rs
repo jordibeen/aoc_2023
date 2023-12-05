@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ops::Range;
 use std::time::Instant;
 
@@ -22,6 +23,7 @@ fn main() {
     let start: Instant = Instant::now();
     let parse: Parse = parse(&input);
     println!("Part 1: {}", pt1(&parse));
+    println!("Part 2: {}", pt2(&parse));
     println!("Execution time: {:.3?}", start.elapsed());
 }
 
@@ -87,6 +89,57 @@ fn pt1(parse: &Parse) -> usize {
     lowest_location
 }
 
+fn pt2(parse: &Parse) -> usize {
+    // Create seed ranges
+    let mut seed_ranges: Vec<Range<usize>> = Vec::new();
+    parse.seeds.iter().enumerate().for_each(|(i, seed)| {
+        if i % 2 == 0 {
+            seed_ranges.push(*seed..seed + parse.seeds[i + 1]);
+        };
+    });
+
+    // Slice seeds that are available in seed to soil map
+    let mut sliced_seed_ranges: HashSet<Range<usize>> = HashSet::new();
+    parse.maps[0].iter().for_each(|(_, source_range)| {
+        seed_ranges.iter().for_each(|seed_range| {
+            let mut range = seed_range.to_owned();
+            if source_range.contains(&range.start) && source_range.contains(&range.end) {
+                if source_range.start > range.start {
+                    range.start = source_range.start;
+                }
+                if source_range.end < range.end {
+                    range.end = source_range.end;
+                }
+                sliced_seed_ranges.insert(range);
+            }
+        });
+    });
+
+    // Calc lowest location
+    let mut lowest_location: usize = 0;
+    for seed_range in sliced_seed_ranges {
+        for seed in seed_range {
+            let mut source = seed as usize;
+            let mut destination = source;
+
+            parse.maps.iter().for_each(|map| {
+                map.iter().for_each(|(destination_range, source_range)| {
+                    if source_range.contains(&source) {
+                        destination = destination_range.start + (source - source_range.start);
+                    }
+                });
+                source = destination;
+            });
+
+            if lowest_location == 0 || destination < lowest_location {
+                lowest_location = destination;
+            }
+        }
+    }
+
+    lowest_location
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,5 +150,13 @@ mod tests {
         let parse = parse(&input);
         let result = pt1(&parse);
         assert_eq!(result, 35);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example.txt");
+        let maps = parse(&input);
+        let result = pt2(&maps);
+        assert_eq!(result, 46);
     }
 }
