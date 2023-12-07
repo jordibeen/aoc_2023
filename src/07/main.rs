@@ -23,78 +23,84 @@ struct Hand {
 }
 
 impl Hand {
-    fn new(hand: (&str, &str)) -> Self {
+    fn new(hand: (&str, &str), part2: bool) -> Self {
         Self {
             cards: hand.0.to_owned(),
             bid: hand.1.parse::<u16>().unwrap(),
-            strength: Self::calc_strength(hand.0),
+            strength: Self::calc_strength(hand.0, part2),
         }
     }
 
-    fn calc_strength(cards: &str) -> StrengthType {
+    fn calc_strength(cards: &str, part2: bool) -> StrengthType {
         let mut dist: HashMap<char, u16> = HashMap::new();
         cards.chars().for_each(|char| {
             let _ = dist.entry(char).and_modify(|x| *x += 1).or_insert(1);
         });
 
         let mut scoring: Vec<(u16, &char)> = Vec::new();
-        dist.keys().for_each(|key| {
-            let val = dist.get(key).unwrap();
-            match val {
-                &5 => scoring.push((*val, key)),
-                &4 => scoring.push((*val, key)),
-                &3 => scoring.push((*val, key)),
-                &2 => scoring.push((*val, key)),
-                &1 => scoring.push((*val, key)),
-                _ => (),
-            }
-        });
-        scoring.sort_by(|a, b| b.0.cmp(&a.0));
-
-        if scoring[0].0 == 5 {
-            return StrengthType::FiveOfAKind;
-        }
-        if scoring[0].0 == 4 {
-            return StrengthType::FourOfAKind;
-        }
-        if scoring[0].0 == 3 {
-            for score in scoring {
-                if score.0 == 2 {
-                    return StrengthType::FullHouse;
+        if !part2 {
+            dist.keys().for_each(|key| {
+                let val = dist.get(key).unwrap();
+                match val {
+                    &5 => scoring.push((*val, key)),
+                    &4 => scoring.push((*val, key)),
+                    &3 => scoring.push((*val, key)),
+                    &2 => scoring.push((*val, key)),
+                    &1 => scoring.push((*val, key)),
+                    _ => (),
                 }
-            }
-
-            return StrengthType::ThreeOfAKind;
-        }
-
-        if scoring[0].0 == 2 {
-            for score in scoring[1..].iter() {
-                if score.0 == 2 {
-                    return StrengthType::TwoPair;
+            });
+            scoring.sort_by(|a, b| b.0.cmp(&a.0));
+        } else {
+            dist.keys().for_each(|key| {
+                if key != &'J' {
+                    let val = dist.get(key).unwrap();
+                    match val {
+                        &5 => scoring.push((*val, key)),
+                        &4 => scoring.push((*val, key)),
+                        &3 => scoring.push((*val, key)),
+                        &2 => scoring.push((*val, key)),
+                        &1 => scoring.push((*val, key)),
+                        _ => (),
+                    }
+                } else {
+                    scoring.push((0, &'A'));
                 }
-            }
+            });
+            scoring.sort_by(|a, b| b.0.cmp(&a.0));
 
-            return StrengthType::OnePair;
+            let jokers: u16 = cards.chars().filter(|a| a == &'J').count() as u16;
+            if jokers > 0 {
+                scoring[0].0 += jokers;
+            }
         }
 
-        StrengthType::HighCard
+        let highest_count = scoring[0].0;
+        match highest_count {
+            5 => return StrengthType::FiveOfAKind,
+            4 => return StrengthType::FourOfAKind,
+            3 => {
+                for score in scoring {
+                    if score.0 == 2 {
+                        return StrengthType::FullHouse;
+                    }
+                }
+                return StrengthType::ThreeOfAKind;
+            }
+            2 => {
+                for score in scoring[1..].iter() {
+                    if score.0 == 2 {
+                        return StrengthType::TwoPair;
+                    }
+                }
+                return StrengthType::OnePair;
+            }
+            _ => return StrengthType::HighCard,
+        }
     }
 }
 
-fn main() {
-    println!("--- Day 7: Camel Cards ---");
-    let input: &str = include_str!("./input.txt");
-    let start: Instant = Instant::now();
-    println!("Part 1: {}", pt1(&input));
-    println!("Execution time: {:.3?}", start.elapsed());
-}
-
-fn pt1(input: &str) -> usize {
-    let mut hands: Vec<Hand> = input
-        .lines()
-        .map(|line| Hand::new(line.split_once(" ").unwrap()))
-        .collect();
-
+fn sort_hands(hands: &mut Vec<Hand>, part2: bool) -> &mut Vec<Hand> {
     hands.sort_by(|a, b| {
         let a_strength = a.strength as u8;
         let b_strength = b.strength as u8;
@@ -103,26 +109,74 @@ fn pt1(input: &str) -> usize {
             let mut a_val: u8 = 0;
             let mut b_val: u8 = 0;
             for (a_char, b_char) in a.cards.chars().zip(b.cards.chars()) {
-                let a_score = CHARS.iter().position(|x| x == &a_char.to_string()).unwrap();
-                let b_score = CHARS.iter().position(|x| x == &b_char.to_string()).unwrap();
+                let mut a_score = CHARS
+                    .iter()
+                    .rev()
+                    .position(|x| x == &a_char.to_string())
+                    .unwrap();
+                let mut b_score = CHARS
+                    .iter()
+                    .rev()
+                    .position(|x| x == &b_char.to_string())
+                    .unwrap();
+                if part2 {
+                    if a_char == 'J' {
+                        a_score = 0;
+                    }
+                    if b_char == 'J' {
+                        b_score = 0
+                    }
+                }
                 if a_score != b_score {
                     a_val = a_score as u8;
                     b_val = b_score as u8;
                     break;
                 }
             }
-            b_val.cmp(&a_val)
+            a_val.cmp(&b_val)
         } else {
             a_strength.cmp(&b_strength)
         }
     });
 
-    let winnings: usize = hands
+    hands
+}
+
+fn main() {
+    println!("--- Day 7: Camel Cards ---");
+    let input: &str = include_str!("./input.txt");
+    let start: Instant = Instant::now();
+    println!("Part 1: {}", pt1(&input));
+    println!("Part 2: {}", pt2(&input));
+    println!("Execution time: {:.3?}", start.elapsed());
+}
+
+fn pt1(input: &str) -> usize {
+    let mut hands: Vec<Hand> = input
+        .lines()
+        .map(|line| Hand::new(line.split_once(" ").unwrap(), false))
+        .collect();
+
+    let sorted_hands = sort_hands(&mut hands, false);
+
+    sorted_hands
         .iter()
         .enumerate()
-        .fold(0, |acc, (i, hand)| acc + (hand.bid as usize * (i + 1)));
+        .fold(0, |acc, (i, hand)| acc + (hand.bid as usize * (i + 1)))
+}
 
-    winnings
+fn pt2(input: &str) -> usize {
+    let mut hands: Vec<Hand> = input
+        .lines()
+        .map(|line| Hand::new(line.split_once(" ").unwrap(), true))
+        .collect();
+
+    let sorted_hands = sort_hands(&mut hands, true);
+
+    sorted_hands
+        .iter()
+        .enumerate()
+        .fold(0, |acc, (i, hand)| acc + (hand.bid as usize * (i + 1)))
 }
 
 #[cfg(test)]
@@ -134,5 +188,12 @@ mod tests {
         let input = include_str!("./example.txt");
         let result = pt1(&input);
         assert_eq!(result, 6440);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example.txt");
+        let result = pt2(&input);
+        assert_eq!(result, 5905);
     }
 }
