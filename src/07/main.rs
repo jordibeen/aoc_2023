@@ -55,19 +55,11 @@ impl Hand {
 
         let mut scores: Vec<u16> = dist
             .keys()
-            .flat_map(|key| {
-                let val = dist.get(key).unwrap();
+            .map(|key| {
                 if part2 && key == &'J' {
-                    Some(0)
+                    0_u16
                 } else {
-                    match val {
-                        &5 => Some(*val),
-                        &4 => Some(*val),
-                        &3 => Some(*val),
-                        &2 => Some(*val),
-                        &1 => Some(*val),
-                        _ => None,
-                    }
+                    dist.get(key).unwrap().to_owned()
                 }
             })
             .collect();
