@@ -4,7 +4,7 @@ const CHARS: [&'static str; 14] = [
     "A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2", "1",
 ];
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 enum StrengthType {
     HighCard = 1,
     OnePair = 2,
@@ -17,129 +17,92 @@ enum StrengthType {
 
 #[derive(Debug)]
 struct Hand {
-    cards: String,
     bid: u16,
+    values: (u8, u8, u8, u8, u8),
     strength: StrengthType,
 }
 
 impl Hand {
     fn new(hand: (&str, &str), part2: bool) -> Self {
+        let v: Vec<u8> = hand
+            .0
+            .chars()
+            .map(|char| {
+                if part2 && char == 'J' {
+                    0
+                } else {
+                    CHARS
+                        .iter()
+                        .rev()
+                        .position(|x| x == &char.to_string())
+                        .unwrap() as u8
+                }
+            })
+            .collect();
+
         Self {
-            cards: hand.0.to_owned(),
             bid: hand.1.parse::<u16>().unwrap(),
+            values: (v[0], v[1], v[2], v[3], v[4]),
             strength: Self::calc_strength(hand.0, part2),
         }
     }
 
     fn calc_strength(cards: &str, part2: bool) -> StrengthType {
         let mut dist: HashMap<char, u16> = HashMap::new();
-        cards.chars().for_each(|char| {
-            let _ = dist.entry(char).and_modify(|x| *x += 1).or_insert(1);
-        });
+        for char in cards.chars() {
+            dist.entry(char).and_modify(|x| *x += 1).or_insert(1);
+        }
 
-        let mut scoring: Vec<(u16, &char)> = Vec::new();
-        if !part2 {
-            dist.keys().for_each(|key| {
+        let mut scores: Vec<u16> = dist
+            .keys()
+            .flat_map(|key| {
                 let val = dist.get(key).unwrap();
-                match val {
-                    &5 => scoring.push((*val, key)),
-                    &4 => scoring.push((*val, key)),
-                    &3 => scoring.push((*val, key)),
-                    &2 => scoring.push((*val, key)),
-                    &1 => scoring.push((*val, key)),
-                    _ => (),
-                }
-            });
-            scoring.sort_by(|a, b| b.0.cmp(&a.0));
-        } else {
-            dist.keys().for_each(|key| {
-                if key != &'J' {
-                    let val = dist.get(key).unwrap();
-                    match val {
-                        &5 => scoring.push((*val, key)),
-                        &4 => scoring.push((*val, key)),
-                        &3 => scoring.push((*val, key)),
-                        &2 => scoring.push((*val, key)),
-                        &1 => scoring.push((*val, key)),
-                        _ => (),
-                    }
+                if part2 && key == &'J' {
+                    Some(0)
                 } else {
-                    scoring.push((0, &'A'));
+                    match val {
+                        &5 => Some(*val),
+                        &4 => Some(*val),
+                        &3 => Some(*val),
+                        &2 => Some(*val),
+                        &1 => Some(*val),
+                        _ => None,
+                    }
                 }
-            });
-            scoring.sort_by(|a, b| b.0.cmp(&a.0));
+            })
+            .collect();
+        scores.sort_by(|a, b| b.cmp(a));
 
+        if part2 {
             let jokers: u16 = cards.chars().filter(|a| a == &'J').count() as u16;
             if jokers > 0 {
-                scoring[0].0 += jokers;
+                scores[0] += jokers;
             }
         }
 
-        let highest_count = scoring[0].0;
-        match highest_count {
-            5 => return StrengthType::FiveOfAKind,
-            4 => return StrengthType::FourOfAKind,
+        let highest_count = scores[0];
+        let strength_type = match highest_count {
+            5 => StrengthType::FiveOfAKind,
+            4 => StrengthType::FourOfAKind,
             3 => {
-                for score in scoring {
-                    if score.0 == 2 {
-                        return StrengthType::FullHouse;
-                    }
+                if scores[1] == 2 {
+                    StrengthType::FullHouse
+                } else {
+                    StrengthType::ThreeOfAKind
                 }
-                return StrengthType::ThreeOfAKind;
             }
             2 => {
-                for score in scoring[1..].iter() {
-                    if score.0 == 2 {
-                        return StrengthType::TwoPair;
-                    }
+                if scores[1] == 2 {
+                    StrengthType::TwoPair
+                } else {
+                    StrengthType::OnePair
                 }
-                return StrengthType::OnePair;
             }
-            _ => return StrengthType::HighCard,
-        }
+            _ => StrengthType::HighCard,
+        };
+
+        strength_type
     }
-}
-
-fn sort_hands(hands: &mut Vec<Hand>, part2: bool) -> &mut Vec<Hand> {
-    hands.sort_by(|a, b| {
-        let a_strength = a.strength as u8;
-        let b_strength = b.strength as u8;
-
-        if a_strength == b_strength {
-            let mut a_val: u8 = 0;
-            let mut b_val: u8 = 0;
-            for (a_char, b_char) in a.cards.chars().zip(b.cards.chars()) {
-                let mut a_score = CHARS
-                    .iter()
-                    .rev()
-                    .position(|x| x == &a_char.to_string())
-                    .unwrap();
-                let mut b_score = CHARS
-                    .iter()
-                    .rev()
-                    .position(|x| x == &b_char.to_string())
-                    .unwrap();
-                if part2 {
-                    if a_char == 'J' {
-                        a_score = 0;
-                    }
-                    if b_char == 'J' {
-                        b_score = 0
-                    }
-                }
-                if a_score != b_score {
-                    a_val = a_score as u8;
-                    b_val = b_score as u8;
-                    break;
-                }
-            }
-            a_val.cmp(&b_val)
-        } else {
-            a_strength.cmp(&b_strength)
-        }
-    });
-
-    hands
 }
 
 fn main() {
@@ -157,12 +120,14 @@ fn pt1(input: &str) -> usize {
         .map(|line| Hand::new(line.split_once(" ").unwrap(), false))
         .collect();
 
-    let sorted_hands = sort_hands(&mut hands, false);
+    hands.sort_unstable_by_key(|hand| (hand.strength, hand.values));
 
-    sorted_hands
+    let winnings = hands
         .iter()
         .enumerate()
-        .fold(0, |acc, (i, hand)| acc + (hand.bid as usize * (i + 1)))
+        .fold(0, |acc, (i, hand)| acc + (hand.bid as usize * (i + 1)));
+
+    winnings
 }
 
 fn pt2(input: &str) -> usize {
@@ -171,12 +136,14 @@ fn pt2(input: &str) -> usize {
         .map(|line| Hand::new(line.split_once(" ").unwrap(), true))
         .collect();
 
-    let sorted_hands = sort_hands(&mut hands, true);
+    hands.sort_unstable_by_key(|hand| (hand.strength, hand.values));
 
-    sorted_hands
+    let winnings = hands
         .iter()
         .enumerate()
-        .fold(0, |acc, (i, hand)| acc + (hand.bid as usize * (i + 1)))
+        .fold(0, |acc, (i, hand)| acc + (hand.bid as usize * (i + 1)));
+
+    winnings
 }
 
 #[cfg(test)]
