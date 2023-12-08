@@ -23,9 +23,8 @@ struct Hand {
 }
 
 impl Hand {
-    fn new(hand: (&str, &str), part2: bool) -> Self {
-        let v: Vec<u8> = hand
-            .0
+    fn new(cards: &str, bids: &str, part2: bool) -> Self {
+        let v: Vec<u8> = cards
             .chars()
             .map(|char| {
                 if part2 && char == 'J' {
@@ -41,9 +40,9 @@ impl Hand {
             .collect();
 
         Self {
-            bid: hand.1.parse::<u16>().unwrap(),
+            bid: bids.parse::<u16>().unwrap(),
             values: (v[0], v[1], v[2], v[3], v[4]),
-            strength: Self::calc_strength(hand.0, part2),
+            strength: Self::calc_strength(cards, part2),
         }
     }
 
@@ -105,7 +104,10 @@ fn main() {
 fn pt1(input: &str) -> usize {
     let mut hands: Vec<Hand> = input
         .lines()
-        .map(|line| Hand::new(line.split_once(" ").unwrap(), false))
+        .map(|line| {
+            let s = line.split_once(" ").unwrap();
+            Hand::new(s.0, s.1, false)
+        })
         .collect();
 
     hands.sort_unstable_by_key(|hand| (hand.strength, hand.values));
@@ -121,7 +123,10 @@ fn pt1(input: &str) -> usize {
 fn pt2(input: &str) -> usize {
     let mut hands: Vec<Hand> = input
         .lines()
-        .map(|line| Hand::new(line.split_once(" ").unwrap(), true))
+        .map(|line| {
+            let s = line.split_once(" ").unwrap();
+            Hand::new(s.0, s.1, true)
+        })
         .collect();
 
     hands.sort_unstable_by_key(|hand| (hand.strength, hand.values));
