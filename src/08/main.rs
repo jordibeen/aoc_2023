@@ -36,8 +36,9 @@ fn parse(input: &str) -> Network {
 }
 
 fn pt1(network: &Network) -> i32 {
-    let mut steps = 0;
     let mut cursor: String = "AAA".to_string();
+
+    let mut steps = 0;
     while cursor != "ZZZ" {
         for instruction in network.instructions.chars() {
             let (left, right) = network.map.get(&cursor).unwrap();
@@ -60,32 +61,30 @@ fn pt2(network: &Network) -> usize {
         .filter(|key| key.ends_with("A"))
         .collect();
 
-    let mut routes: Vec<Vec<&String>> = Vec::new();
-    let mut instructions: Vec<usize> = Vec::new();
-
-    cursors.iter_mut().for_each(|cursor| {
-        let mut route: Vec<&String> = vec![cursor];
-        let mut i: usize = 0;
-        while !cursor.ends_with("Z") {
-            for instruction in network.instructions.chars() {
-                let (left, right) = network.map.get(&cursor.to_owned()).unwrap();
-                match instruction {
-                    'L' => *cursor = left,
-                    'R' => *cursor = right,
-                    _ => (),
+    let instruction_counts: Vec<usize> = cursors
+        .iter_mut()
+        .map(|cursor| {
+            let mut i: usize = 0;
+            while !cursor.ends_with("Z") {
+                for instruction in network.instructions.chars() {
+                    let (left, right) = network.map.get(&cursor.to_owned()).unwrap();
+                    match instruction {
+                        'L' => *cursor = left,
+                        'R' => *cursor = right,
+                        _ => (),
+                    }
+                    i += 1;
                 }
-                i += 1;
-                route.push(cursor);
             }
-        }
-        instructions.push(i);
-        routes.push(route);
-    });
+            i
+        })
+        .collect();
 
-    let mut steps = instructions[0];
-    instructions.iter().for_each(|instruction| {
-        steps = lcm(steps, *instruction);
-    });
+    let steps = instruction_counts
+        .iter()
+        .fold(instruction_counts[0], |acc, instruction| {
+            lcm(acc, *instruction)
+        });
 
     steps
 }
