@@ -66,14 +66,10 @@ impl Hand {
         scores.sort_by(|a, b| b.cmp(a));
 
         if part2 {
-            let jokers: u16 = cards.chars().filter(|a| a == &'J').count() as u16;
-            if jokers > 0 {
-                scores[0] += jokers;
-            }
+            scores[0] += cards.chars().filter(|a| a == &'J').count() as u16;
         }
 
-        let highest_count = scores[0];
-        let strength_type = match highest_count {
+        let strength_type = match scores[0] {
             5 => StrengthType::FiveOfAKind,
             4 => StrengthType::FourOfAKind,
             3 => {
