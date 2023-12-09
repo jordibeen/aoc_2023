@@ -1,38 +1,36 @@
 use std::time::Instant;
 
+type Sequences = Vec<Vec<Vec<isize>>>;
+
 fn main() {
     println!("--- Day 9: Mirage Maintenance ---");
     let input: &str = include_str!("./input.txt");
     let start: Instant = Instant::now();
-    println!("Part 1: {}", pt1(&input));
-    println!("Part 1: {}", pt2(&input));
+    let sequences: Sequences = parse(&input);
+    println!("Part 1: {}", pt1(&sequences));
+    println!("Part 2: {}", pt2(&sequences));
     println!("Execution time: {:.3?}", start.elapsed());
 }
 
-fn pt1(input: &str) -> isize {
-    let mut histories: Vec<Vec<isize>> = input
+fn parse(input: &str) -> Sequences {
+    let sequences: Sequences = input
         .lines()
         .map(|line| {
-            line.split(" ")
+            let history: Vec<isize> = line
+                .split(" ")
                 .map(|value| value.parse::<isize>().unwrap())
-                .collect()
-        })
-        .collect();
+                .collect();
 
-    // let mut differences: Vec<Vec<isize>> = Vec::new();
-    let sequences: Vec<Vec<Vec<isize>>> = histories
-        .iter()
-        .map(|history| {
-            let mut diff_sequences: Vec<Vec<isize>> = Vec::new();
+            let mut diff_seqs: Vec<Vec<isize>> = vec![history.clone()];
 
-            let mut diff_sequence: Vec<isize> = history.clone();
-            while !diff_sequence.iter().all(|x| x == &0_isize) {
-                diff_sequence = diff_sequence
+            let mut curr_seq: Vec<isize> = history.clone();
+            while !curr_seq.iter().all(|x| x == &0_isize) {
+                curr_seq = curr_seq
                     .iter()
                     .enumerate()
                     .filter_map(|(i, value)| {
-                        if i < diff_sequence.len() - 1 {
-                            let next_value = diff_sequence[i + 1];
+                        if i < curr_seq.len() - 1 {
+                            let next_value = curr_seq[i + 1];
                             let diff = next_value - value;
                             Some(diff)
                         } else {
@@ -40,81 +38,40 @@ fn pt1(input: &str) -> isize {
                         }
                     })
                     .collect();
-                diff_sequences.push(diff_sequence.clone());
+                diff_seqs.push(curr_seq.clone());
             }
 
-            diff_sequences
+            diff_seqs
         })
         .collect();
 
-    let extrapolations: Vec<isize> = histories
-        .iter_mut()
-        .zip(&sequences)
-        .map(|(history, diff_sequences)| {
-            let extrapolation_val = diff_sequences
-                .iter()
-                .rev()
-                .fold(0, |acc, sequence| acc + sequence.last().unwrap());
-
-            history.last().unwrap() + extrapolation_val
-        })
-        .collect();
-
-    extrapolations.iter().sum()
+    sequences
 }
 
-fn pt2(input: &str) -> isize {
-    let mut histories: Vec<Vec<isize>> = input
-        .lines()
-        .map(|line| {
-            line.split(" ")
-                .map(|value| value.parse::<isize>().unwrap())
-                .collect()
-        })
-        .collect();
+fn pt1(sequences: &Sequences) -> isize {
+    let answer = sequences.iter().fold(0, |acc, diff_seqs| {
+        let extrapolation_value = diff_seqs
+            .iter()
+            .rev()
+            .fold(0, |ext, seq| ext + seq.last().unwrap());
 
-    // let mut differences: Vec<Vec<isize>> = Vec::new();
-    let sequences: Vec<Vec<Vec<isize>>> = histories
-        .iter()
-        .map(|history| {
-            let mut diff_sequences: Vec<Vec<isize>> = Vec::new();
+        acc + extrapolation_value
+    });
 
-            let mut diff_sequence: Vec<isize> = history.clone();
-            while !diff_sequence.iter().all(|x| x == &0_isize) {
-                diff_sequences.push(diff_sequence.clone());
-                diff_sequence = diff_sequence
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, value)| {
-                        if i < diff_sequence.len() - 1 {
-                            let next_value = diff_sequence[i + 1];
-                            let diff = next_value - value;
-                            Some(diff)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-            }
+    answer
+}
 
-            diff_sequences
-        })
-        .collect();
+fn pt2(sequences: &Sequences) -> isize {
+    let answer = sequences.iter().fold(0, |acc, diff_seqs| {
+        let extrapolation_value = diff_seqs
+            .iter()
+            .rev()
+            .fold(0, |ext, seq| seq.first().unwrap() - ext);
 
-    let extrapolations: Vec<isize> = histories
-        .iter_mut()
-        .zip(&sequences)
-        .map(|(_, diff_sequences)| {
-            let extrapolation_val = diff_sequences
-                .iter()
-                .rev()
-                .fold(0, |acc, seq| seq.first().unwrap() - acc);
+        acc + extrapolation_value
+    });
 
-            extrapolation_val
-        })
-        .collect();
-
-    extrapolations.iter().sum()
+    answer
 }
 
 #[cfg(test)]
@@ -124,14 +81,16 @@ mod tests {
     #[test]
     fn pt1_test() {
         let input = include_str!("./example.txt");
-        let result = pt1(&input);
+        let sequences: Sequences = parse(&input);
+        let result = pt1(&sequences);
         assert_eq!(result, 114);
     }
 
     #[test]
     fn pt2_test() {
         let input = include_str!("./example.txt");
-        let result = pt2(&input);
+        let sequences: Sequences = parse(&input);
+        let result = pt2(&sequences);
         assert_eq!(result, 2);
     }
 }
