@@ -51,12 +51,12 @@ fn pt1(input: &str) -> isize {
         .iter_mut()
         .zip(&sequences)
         .map(|(history, diff_sequences)| {
-            let extrapolation = diff_sequences
+            let extrapolation_val = diff_sequences
                 .iter()
                 .rev()
                 .fold(0, |acc, sequence| acc + sequence.last().unwrap());
 
-            history.last().unwrap() + extrapolation
+            history.last().unwrap() + extrapolation_val
         })
         .collect();
 
