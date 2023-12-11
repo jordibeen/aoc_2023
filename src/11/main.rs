@@ -1,19 +1,23 @@
 use std::time::Instant;
 
-type Grid = Vec<Vec<char>>;
 type Coords = (usize, usize);
+type Grid = Vec<Vec<char>>;
+type Galaxies = Vec<Coords>;
 
 fn main() {
     println!("--- Day 11: Cosmic Expansion ---");
     let input: &str = include_str!("./input.txt");
     let start: Instant = Instant::now();
-    println!("Part 1: {}", pt1(&input));
+
+    let (grid, galaxies): (Grid, Galaxies) = parse(&input);
+    println!("Part 1: {}", expand_and_calc(&grid, &galaxies, 2));
+    println!("Part 2: {}", expand_and_calc(&grid, &galaxies, 1000000));
     println!("Execution time: {:.3?}", start.elapsed());
 }
 
-fn pt1(input: &str) -> usize {
-    let mut initial_galaxies: Vec<Coords> = Vec::new();
-    let initial_grid: Grid = input
+fn parse(input: &str) -> (Grid, Galaxies) {
+    let mut galaxies: Galaxies = Vec::new();
+    let grid: Grid = input
         .lines()
         .enumerate()
         .map(|(y, line)| {
@@ -21,7 +25,7 @@ fn pt1(input: &str) -> usize {
                 .enumerate()
                 .map(|(x, char)| {
                     if char == '#' {
-                        initial_galaxies.push((y, x));
+                        galaxies.push((y, x));
                     }
                     char
                 })
@@ -29,14 +33,56 @@ fn pt1(input: &str) -> usize {
         })
         .collect();
 
-    let (_, galaxies) = expand_grid(&initial_grid, &mut initial_galaxies);
+    (grid, galaxies)
+}
 
-    let sum: usize = galaxies.iter().fold(0, |acc, galaxy| {
+fn expand_and_calc(grid: &Grid, galaxies: &Galaxies, times: usize) -> usize {
+    let mut expanded_grid: Grid = grid.clone();
+    let mut galaxies: Galaxies = galaxies.clone();
+
+    // Expand rows
+    grid.iter().enumerate().for_each(|(y, row)| {
+        if row.iter().all(|char| char == &'.') {
+            (1..times).for_each(|_| {
+                let expansion_index = y + (expanded_grid.len() - grid.len());
+
+                expanded_grid.insert(expansion_index, row.to_owned());
+
+                galaxies.iter_mut().for_each(|galaxy| {
+                    if galaxy.0 > expansion_index {
+                        galaxy.0 += 1;
+                    }
+                });
+            })
+        }
+    });
+
+    // Expand columns
+    (0..grid[0].len()).for_each(|x| {
+        let col: Vec<char> = (0..grid.len()).map(|y| grid[y][x]).collect();
+        if col.iter().all(|char| char == &'.') {
+            (1..times).for_each(|_| {
+                let expansion_index = x + (expanded_grid[0].len() - grid[0].len());
+
+                grid.iter().enumerate().for_each(|(y, _)| {
+                    expanded_grid[y].insert(expansion_index, '.');
+                });
+
+                galaxies.iter_mut().for_each(|galaxy| {
+                    if galaxy.1 > expansion_index {
+                        galaxy.1 += 1;
+                    }
+                });
+            });
+        }
+    });
+
+    // Sum distances between galaxies
+    let sum: usize = galaxies.iter().fold(0, |acc, l| {
         let distances: Vec<usize> = galaxies
             .iter()
-            .map(|next_galaxy| {
-                ((galaxy.0 as isize - next_galaxy.0 as isize).abs()
-                    + (galaxy.1 as isize - next_galaxy.1 as isize).abs()) as usize
+            .map(|r| {
+                ((l.0 as isize - r.0 as isize).abs() + (l.1 as isize - r.1 as isize).abs()) as usize
             })
             .collect();
 
@@ -46,45 +92,6 @@ fn pt1(input: &str) -> usize {
     sum / 2
 }
 
-fn expand_grid(grid: &Grid, galaxies: &mut Vec<Coords>) -> (Grid, Vec<Coords>) {
-    let mut expanded_grid: Grid = grid.clone();
-
-    // Expand rows
-    grid.iter().enumerate().for_each(|(y, row)| {
-        if row.iter().all(|char| char == &'.') {
-            let expansion_index = y + (expanded_grid.len() - grid.len());
-
-            expanded_grid.insert(expansion_index, row.to_owned());
-
-            galaxies.iter_mut().for_each(|galaxy| {
-                if galaxy.0 > expansion_index {
-                    galaxy.0 += 1;
-                }
-            });
-        }
-    });
-
-    // Expand columns
-    (0..grid[0].len()).for_each(|x| {
-        let col: Vec<char> = (0..grid.len()).map(|y| grid[y][x]).collect();
-        if col.iter().all(|char| char == &'.') {
-            let expansion_index = x + (expanded_grid[0].len() - grid[0].len());
-
-            grid.iter().enumerate().for_each(|(y, _)| {
-                expanded_grid[y].insert(expansion_index, '.');
-            });
-
-            galaxies.iter_mut().for_each(|galaxy| {
-                if galaxy.1 > expansion_index {
-                    galaxy.1 += 1;
-                }
-            });
-        }
-    });
-
-    (expanded_grid, galaxies.clone())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -92,7 +99,18 @@ mod tests {
     #[test]
     fn pt1_test() {
         let input = include_str!("./example.txt");
-        let result = pt1(&input);
+        let (grid, galaxies) = parse(&input);
+        let result = expand_and_calc(&grid, &galaxies, 2);
         assert_eq!(result, 374);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example.txt");
+        let (grid, galaxies) = parse(&input);
+        let result = expand_and_calc(&grid, &galaxies, 10);
+        assert_eq!(result, 1030);
+        let result = expand_and_calc(&grid, &galaxies, 100);
+        assert_eq!(result, 8410);
     }
 }
