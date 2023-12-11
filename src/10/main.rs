@@ -1,18 +1,21 @@
 use std::time::Instant;
 
-// const DIRECTIONS: [&'static str; 4] = ["north", "east", "south", "west"];
 type Grid = Vec<Vec<char>>;
-type Position = (isize, isize);
+type Route = Vec<Position>;
+type Position = (usize, usize);
 
 fn main() {
     println!("--- Day 10: Pipe Maze ---");
     let input: &str = include_str!("./input.txt");
     let start: Instant = Instant::now();
-    println!("Part 1: {}", pt1(&input));
+
+    let (grid, route) = parse(&input);
+    println!("Part 1: {}", pt1(&route));
+    println!("Part 2: {}", pt2(&grid, &route));
     println!("Execution time: {:.3?}", start.elapsed());
 }
 
-fn pt1(input: &str) -> usize {
+fn parse(input: &str) -> (Grid, Route) {
     let mut route: Vec<Position> = Vec::new();
     let grid: Grid = input
         .lines()
@@ -22,7 +25,7 @@ fn pt1(input: &str) -> usize {
                 .enumerate()
                 .map(|(x, char)| {
                     if char == 'S' {
-                        route.push((y as isize, x as isize));
+                        route.push((y, x));
                     };
                     char
                 })
@@ -52,7 +55,7 @@ fn pt1(input: &str) -> usize {
             }
 
             // Determine next move
-            let next_char: char = grid[next_pos.0 as usize][next_pos.1 as usize];
+            let next_char: char = grid[next_pos.0][next_pos.1];
             next_pos = match next_char {
                 '|' => {
                     // From north to south
@@ -121,11 +124,40 @@ fn pt1(input: &str) -> usize {
         }
     }
 
+    (grid, route)
+}
+
+fn pt1(route: &Route) -> usize {
+    route.len() / 2
+}
+
+fn pt2(grid: &Grid, route: &Route) -> usize {
+    let mut insides: Vec<Position> = Vec::new();
+
+    grid.iter().enumerate().for_each(|(y, row)| {
+        let mut vertical_pipes: Vec<Position> = Vec::new();
+
+        for (x, character) in row.iter().enumerate() {
+            if route.contains(&(y, x))
+                && (character == &'|' || character == &'J' || character == &'L')
+            {
+                vertical_pipes.push((y, x));
+            }
+
+            if !route.contains(&(y, x)) && vertical_pipes.len() % 2 != 0 {
+                insides.push((y, x));
+            }
+        }
+    });
+
     // // Draw to debug
     // for y in 0..grid.len() {
     //     for x in 0..grid[0].len() {
-    //         if route.contains(&(y as isize, x as isize)) {
-    //             print!("{}", grid[y as usize][x as usize]);
+    //         if route.contains(&(y, x)) {
+    //             // print!("{}", grid[y][x]);
+    //             print!("#");
+    //         } else if insides.contains(&(y, x)) {
+    //             print!("I");
     //         } else {
     //             print!(".");
     //         }
@@ -133,7 +165,7 @@ fn pt1(input: &str) -> usize {
     //     print!("\n");
     // }
 
-    route.len() / 2
+    insides.len()
 }
 
 fn get_initial_directions(grid: &Grid, initial_pos: &Position) -> Vec<Position> {
@@ -173,11 +205,32 @@ mod tests {
     #[test]
     fn pt1_test() {
         let input = include_str!("./example_pt1_1.txt");
-        let result = pt1(&input);
+        let (_, route) = parse(&input);
+        let result = pt1(&route);
         assert_eq!(result, 4);
 
         let input = include_str!("./example_pt1_2.txt");
-        let result = pt1(&input);
+        let (_, route) = parse(&input);
+        let result = pt1(&route);
         assert_eq!(result, 8);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example_pt2_1.txt");
+        let (grid, route) = parse(&input);
+        let result1 = pt2(&grid, &route);
+
+        let input = include_str!("./example_pt2_2.txt");
+        let (grid, route) = parse(&input);
+        let result2 = pt2(&grid, &route);
+
+        let input = include_str!("./example_pt2_3.txt");
+        let (grid, route) = parse(&input);
+        let result3 = pt2(&grid, &route);
+
+        assert_eq!(result1, 4);
+        assert_eq!(result2, 8);
+        assert_eq!(result3, 10);
     }
 }
