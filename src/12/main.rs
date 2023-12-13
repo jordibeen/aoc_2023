@@ -24,18 +24,18 @@ fn check_characters(
 
     match characters[0] {
         '.' => check_characters(&characters[1..].to_owned(), groups, cache),
-        '#' => check_hash_sequence(groups, characters, cache),
+        '#' => check_hash_sequence(characters, groups, cache),
         '?' => {
             check_characters(&characters[1..].to_owned(), groups, cache)
-                + check_hash_sequence(groups, characters, cache)
+                + check_hash_sequence(characters, groups, cache)
         }
         _ => panic!("unhandled"),
     }
 }
 
 fn check_hash_sequence(
-    groups: &Vec<usize>,
     characters: &Vec<char>,
+    groups: &Vec<usize>,
     cache: &mut HashMap<(Vec<char>, Vec<usize>), usize>,
 ) -> usize {
     if let Some(&result) = cache.get(&(characters.to_owned(), groups.to_owned())) {
