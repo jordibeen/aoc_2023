@@ -12,6 +12,7 @@ fn main() {
     let input: &str = include_str!("./input.txt");
     let start: Instant = Instant::now();
     println!("Part 1: {}", pt1(&input));
+    println!("Part 2: {}", pt2(&input));
     println!("Execution time: {:.3?}", start.elapsed());
 }
 
@@ -50,24 +51,7 @@ fn pt1(input: &str) -> usize {
         });
     });
 
-    flood(&mut cubes);
-
-    // Debug grid
-    // (dimensions.1..dimensions.3).for_each(|y| {
-    //     println!("");
-    //     (dimensions.0..dimensions.2).for_each(|x| {
-    //         if cubes.get(&(y, x)).is_some() {
-    //             print!("#");
-    //         } else {
-    //             print!(".");
-    //         }
-    //     });
-    // });
-
-    cubes.len()
-}
-
-fn flood(cubes: &mut HashMap<Coords, String>) -> () {
+    // Flood fill
     let mut q: VecDeque<(Coords, &str)> = VecDeque::new();
     q.push_back(((1, 1), "#000000"));
 
@@ -81,6 +65,52 @@ fn flood(cubes: &mut HashMap<Coords, String>) -> () {
         q.push_back(((coords.0, coords.1 + 1), fill));
         q.push_back(((coords.0, coords.1 - 1), fill));
     }
+
+    cubes.len()
+}
+
+fn pt2(input: &str) -> usize {
+    let regex =
+        Regex::new("[A-Z] \\d+ \\(#(?<meters>[a-z0-9]{5})(?<direction>[0-9]{1})\\)").unwrap();
+    let mut pos: Coords = (0, 0);
+    let mut perimeter: i64 = 0;
+
+    let corners: Vec<Coords> = input
+        .lines()
+        .map(|line| {
+            let caps = regex.captures(line).unwrap();
+
+            let direction = match caps.name("direction").unwrap().as_str() {
+                "0" => (0, 1),
+                "1" => (1, 0),
+                "2" => (0, -1),
+                "3" => (-1, 0),
+                _ => unreachable!(),
+            };
+            let meters = i32::from_str_radix(caps.name("meters").unwrap().as_str(), 16).unwrap();
+
+            let next_pos = (
+                (pos.0 + (direction.0 * meters)),
+                (pos.1 + (direction.1 * meters)),
+            );
+
+            perimeter += meters as i64;
+            pos = next_pos;
+
+            next_pos
+        })
+        .collect();
+
+    let shoelace: i64 = corners
+        .iter()
+        .zip(corners.iter().skip(1))
+        .map(|(l, r)| l.1 as i64 * r.0 as i64 - l.0 as i64 * r.1 as i64)
+        .sum::<i64>()
+        / 2;
+
+    let picks_theorem: i64 = shoelace + perimeter / 2 + 1;
+
+    picks_theorem as usize
 }
 
 #[cfg(test)]
@@ -92,5 +122,12 @@ mod tests {
         let input = include_str!("./example.txt");
         let result = pt1(&input);
         assert_eq!(result, 62);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example.txt");
+        let result = pt2(&input);
+        assert_eq!(result, 952408144115);
     }
 }
